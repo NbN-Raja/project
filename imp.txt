@@ -1,0 +1,56 @@
+
+const express = require('express');
+const app = express();
+const port = 3000;
+
+app.use(express.static('public'));
+
+app.listen(port, () => {
+  console.log(`Server listening on port ${port}!`);
+});
+
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Voice Recognition Example</title>
+</head>
+<body>
+  <button id="start-button">Start Voice Recognition</button>
+  <script src="/js/main.js"></script>
+</body>
+</html>
+
+
+const recognition = new webkitSpeechRecognition();
+const startButton = document.getElementById('start-button');
+
+recognition.lang = 'en-US';
+
+startButton.addEventListener('click', () => {
+  recognition.start();
+});
+
+recognition.addEventListener('result', (event) => {
+  const text = event.results[0][0].transcript;
+  sendVoiceCommand(text);
+});
+
+function sendVoiceCommand(text) {
+  fetch('/voice-command', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ command: text })
+  });
+}
+
+
+app.post('/voice-command', (req, res) => {
+  const { command } = req.body;
+  console.log(`Voice command received: ${command}`);
+  // Perform action based on the command
+  res.sendStatus(200);
+});

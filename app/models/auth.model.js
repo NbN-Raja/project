@@ -2,6 +2,8 @@ const mongoose= require("mongoose")
 const Joi = require('joi');
 const { body, validationResult } = require('express-validator');
 const { date } = require("joi");
+require("../auth/roles")
+
 
 const UserSchema = new mongoose.Schema({
     username: {
@@ -39,7 +41,17 @@ const UserSchema = new mongoose.Schema({
       address:{
         type: String,
         required:true
-      }
+      },
+      role: { type: String, default: "USER"} ,// Default role is user
+      deletedAt: {
+        type: Date,
+        default: null,
+      },
+      restoreAt: {
+        type: Date,
+        default: null,
+      },
+
 
   });
 

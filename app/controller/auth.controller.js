@@ -1,21 +1,19 @@
 const bcrypt = require("bcrypt");
 const axios = require("axios");
 const cookieParser = require("cookie-parser");
-const {User,Udetails} = require("../models/auth.model");
+const { User, Udetails } = require("../models/auth.model");
 const { body, validationResult } = require("express-validator");
 const { response } = require("express");
 var jwt = require("jsonwebtoken");
-const { jwtSecret } = require("../auth/config");
+const { jwtSecret,jwtSecretrefresh } = require("../auth/config");
 const { isObjectIdOrHexString, isValidObjectId } = require("mongoose");
-var geoip = require('geoip-lite');
-var ip = require('ip');
-
+var geoip = require("geoip-lite");
+var ip = require("ip");
+require("../auth/roles");
 
 exports.get = (req, res) => {};
 
-
-
-exports.login = async (req, res) => {
+exports.login = async (req, res,next) => {
   try {
     const email = req.body.email;
     const password = req.body.password;
@@ -34,35 +32,24 @@ exports.login = async (req, res) => {
       res.status(404).send({ message: "Email or password incorrect" });
       return;
     }
-
+   
+    // Redirect to login page if user is not authenticated or doesn't have admin role
+   
+    // const refreshToken = jwt.sign({ id: user.id, role: user.role },jwtSecretrefresh, jwtSecret,{ expiresIn: '1800s' });
+    
     // Create token
-    const token = jwt.sign({ id: user.id }, jwtSecret);
-    // const detaills = await User.findOne({ ip });
-    // if (detaills) {
-    //   return res
-    //     .status(400)
-    //     .json({ message: "User With this email already exists " });
-    // }
-    // // Create user details
-    // const udetails = new Udetails({
-    //   ip: ip.address(),
-    //   location: req.body.location,
-    //   code: req.body.code,
-    //   timezone: req.body.timezone,
-    //   user: user._id
-    // });
-
-    // // Save user details
-    // await udetails.save();
-
+    const token = jwt.sign({ id: user.id, role: user.role }, jwtSecret,{ expiresIn: '1800s' });
+    if (user.role === 'ADMIN') {
+     
+      res.status(200).send({message: "You are  Admin"});
+    }
+      
     // Send response
-    res.status(201).json({ message: "User Login successfully", token });
-  
+    res.status(201).send({ message: "User Login Successfully",token});
   } catch (error) {
     res.status(400).send({ message: "Error fetching data", error });
   }
 };
-
 
 exports.register = async (req, res) => {
   try {
@@ -102,19 +89,15 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: "Passwords do not match" });
     }
 
+    const role= req.body.role
+
     const user = new User({
       ...req.body,
       password: hashedPassword,
+      
     });
 
     await user.save();
-
-    const ipp = ip.address();
-    const udetails = new Udetails({
-      user: user._id,
-      ip: ipp
-    });
-    await udetails.save();
 
     res.status(201).json({ message: "User registered successfully", user });
   } catch (error) {
@@ -123,37 +106,27 @@ exports.register = async (req, res) => {
 };
 
 exports.details = async (req, res) => {
-
-  const ipp = ip.address();
-  
-var geo = geoip.lookup(ipp);
   const userId = req.params.id.trim();
-const filter = { _id: userId };
-  // console.log(id);
-  // if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-  //   return res.status(400).json({ message: 'Invalid user ID' });
-  // }
+  const filter = { _id: userId };
 
-  const users= User.findOne(filter).exec()
-  .then((data) => {
+  try {
+    const data = await User.findOne(filter).exec();
+
     if (!data) {
       res.status(404).send({
-        message: `Maybe user was not found!`,
+        message: `User with id ${userId} not found`,
       });
+    } else if (data.deletedAt !== null) {
+      res.status(201).send({ message: "User Id Does Not Exist" });
     } else {
-      res.send({data});
-      
+      res.send({ data });
     }
-  })
-  .catch((err) => {
+  } catch (err) {
     res.status(500).send({
-      message: "Invalid User id"
+      message: "Internal server error",
     });
-  });
-
-
+  }
 };
-
 
 
 exports.getalluserdetail = (req, res) => {};

@@ -36,7 +36,7 @@ const connection =mongoose.connect(`mongodb://localhost:27017/usersdb`, {
   });
 
 require("./app/routes/auth.routes")(app)
-require("./app/routes/index.routes")(app)
+require("./app/routes/user.routes")(app)
 
 
 

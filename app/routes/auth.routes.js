@@ -2,6 +2,7 @@ module.exports = function(app) {
     var router = require("express").Router();
   const validateUserInput = require("../models/auth.model")
     const authcontroller = require("../controller/auth.controller")
+    const requireAdmin= require("../auth/rolemiddleware")
   /* GET home page. */
   router.get('/get',authcontroller.get)
   
